@@ -75,9 +75,9 @@ async function run() {
             res.send(result);
         });
 
-        app.get('/users/delivery-man', verifyToken, async (req, res) => {
-            const userTypeFilter = req.query.role || 'deliveryMan';
-            const result = await userCollection.find({ role: userTypeFilter }).toArray();
+        app.get('/users/delivery-man', async (req, res) => {
+            const userTypeFilter = { role: 'deliveryMan' };
+            const result = await userCollection.find(userTypeFilter).toArray();
             res.send(result);
         });
 
@@ -120,6 +120,62 @@ async function run() {
                 }
             }
             const result = await userCollection.updateOne(filter, updatedDoc);
+            res.send(result);
+        })
+
+        app.get('/parcels/search-date', verifyToken, async (req, res) => {
+            try {
+                const { startDate, endDate } = req.query;
+
+                // Parse dates
+                const startDateTime = new Date(startDate);
+                const endDateTime = new Date(endDate);
+
+                // Ensure that the dates are valid
+                if (isNaN(startDateTime) || isNaN(endDateTime)) {
+                    return res.status(400).json({ error: 'Invalid date format' });
+                }
+
+                // MongoDB query
+                const result = await parcelCollection.find({
+                    deliveryDate: {
+                        $gte: startDateTime,
+                        $lte: endDateTime,
+                    },
+                }).toArray();
+
+                console.log(result);
+                res.json(result);
+            } catch (error) {
+                console.error('Error:', error);
+                res.status(500).json({ error: 'Internal server error' });
+            }
+        });
+
+        app.patch('/users/book-count/:email', verifyToken, async (req, res) => {
+            const item = req.body;
+            const email = req.params.email;
+            const filter = { email: email };
+            const updateQuery = {
+                $inc: {
+                    bookedParcelCount: 1,
+                    totalAmount: item.totalAmountInc
+                },
+            };
+            const result = await userCollection.updateOne(filter, updateQuery);
+            res.send(result);
+        })
+
+        app.patch('/users/change-role/:id', verifyToken, async (req, res) => {
+            const item = req.body;
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const updateQuery = {
+                $set: {
+                    role: item.role
+                },
+            };
+            const result = await userCollection.updateOne(filter, updateQuery);
             res.send(result);
         })
 
