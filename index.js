@@ -70,7 +70,7 @@ async function run() {
         }
 
         // users related api
-        app.get('/users', verifyToken, verifyAdmin, async (req, res) => {
+        app.get('/users', verifyToken, async (req, res) => {
             const result = await userCollection.find().toArray();
             res.send(result);
         });
@@ -150,6 +150,31 @@ async function run() {
             res.send(result);
         });
 
+        app.put('/parcel/:id', verifyToken, async (req, res) => {
+            const item = req.body;
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const options = { upsert: true }
+            const updatedDoc = {
+                $set: {
+                    phoneNumber: item.phoneNumber,
+                    parcelType: item.parcelType,
+                    parcelWeight: item.parcelWeight,
+                    receiverName: item.receiverName,
+                    receiverPhone: item.receiverPhone,
+                    deliveryAddress: item.deliveryAddress,
+                    deliveryDate: item.deliveryDate,
+                    deliveryDateReq: item.deliveryDateReq,
+                    deliveryLat: item.deliveryLat,
+                    deliveryLong: item.deliveryLong,
+                    price: item.price,
+                }
+            }
+
+            const result = await parcelCollection.updateOne(filter, updatedDoc, options)
+            res.send(result);
+        })
+
         app.patch('/parcel/:id', verifyToken, async (req, res) => {
             const item = req.body;
             const id = req.params.id;
@@ -160,6 +185,20 @@ async function run() {
                     status: item.status,
                     deliveryManId: item.deliveryManId,
                     estimatedDeliveryDate: item.estimatedDeliveryDate
+                }
+            }
+
+            const result = await parcelCollection.updateOne(filter, updatedDoc)
+            res.send(result);
+        })
+
+        app.patch('/cancel-parcel/:id', verifyToken, async (req, res) => {
+            const item = req.body;
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const updatedDoc = {
+                $set: {
+                    status: item.status
                 }
             }
 
